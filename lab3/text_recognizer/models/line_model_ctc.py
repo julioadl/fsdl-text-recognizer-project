@@ -14,6 +14,9 @@ from text_recognizer.datasets import EmnistLinesDataset
 from text_recognizer.models.base import Model
 from text_recognizer.networks.line_lstm_ctc import line_lstm_ctc
 
+'''
+Note not to get confused with solutions
+'''
 
 class LineModelCtc(Model):
     def __init__(self, dataset_cls: type=EmnistLinesDataset, network_fn: Callable=line_lstm_ctc, dataset_args: Dict=None, network_args: Dict=None):
@@ -80,7 +83,17 @@ class LineModelCtc(Model):
 
         # Get the prediction and confidence using softmax_output_fn, passing the right input into it.
         ##### Your code below (Lab 3)
+        input_image = np.expand_dims(image, 0)
+        softmax_output = softmax_output_fn([input_image, 0])[0]
 
+        input_length = np.array([softmax_output.shape[1]])
+        decoded, log_prob = K.ctc_decode(softmax_output, input_length, greedy=True)
+
+        pred_raw = K.eval(decoded[0])[0]
+        pred = ''.join(self.data.mapping[label] for label in pred_raw).strip()
+
+        neg_sum_logit = K.eval(log_prob)[0][0]
+        conf = np.exp(neg_sum_logit) / (1 + np.exp(neg_sum_logit))
         ##### Your code above (Lab 3)
 
         return pred, conf
